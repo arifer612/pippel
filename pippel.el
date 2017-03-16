@@ -5,6 +5,7 @@
 ;; Author: Fritz Stelzer <brotzeitmacher@gmail.com>
 ;; URL: https://github.com/brotzeitmacher/pippel
 ;; Version: 1.0
+;; Package-Requires: ((emacs "25.1") (s "1.11.0"))
 
 ;;; License:
 ;;
@@ -24,6 +25,7 @@
 (require 'tabulated-list)
 (require 'json)
 (require 's)
+(require 'sort)
 
 (defgroup pippel nil
   "Manager for pip packages."
@@ -122,8 +124,8 @@ If this is nil, it's assumed pippel can be found in the standard path."
       (setq tabulated-list-entries
             (mapcar #'pippel-menu-entry (car packages)))
       (tabulated-list-print t)
-      (setq-local sort-fold-case t)
-      (sort-lines nil (point-min) (point-max)))
+      (let ((sort-fold-case t))
+        (sort-lines nil (point-min) (point-max))))
     (pop-to-buffer buf)))
 
 ;;;;;;;;;;;;;
