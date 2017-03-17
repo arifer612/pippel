@@ -148,7 +148,7 @@ If this is nil, it's assumed pippel can be found in the standard path."
       (accept-process-output proc 0.1)
       proc)))
 
-(defun pippel-process-sentinel (proc output)
+(defun pippel-process-sentinel (proc _output)
   "The sentinel for pip-process."
   (with-current-buffer (process-buffer proc)
     (let ((objects nil)
