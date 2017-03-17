@@ -254,6 +254,7 @@ If this is nil, it's assumed pippel can be found in the standard path."
       (when delete-list
         (pippel-remove-package (mapconcat 'identity delete-list " "))))))
 
+;;;###autoload
 (defun pippel-install-package ()
   "Prompt user for a string containing packages to be installed."
   (interactive)
@@ -261,6 +262,7 @@ If this is nil, it's assumed pippel can be found in the standard path."
         (proc (pippel-open-process)))
     (pippel-call-pip-process proc "install_package" (s-trim pkg))))
 
+;;;###autoload
 (defun pippel-list-packages ()
   "Display a list of installed packages."
   (interactive)
