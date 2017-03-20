@@ -248,11 +248,28 @@ If this is nil, it's assumed pippel can be found in the standard path."
         (forward-line)))
     (unless (or delete-list upgrade-list)
       (user-error "No operations specified"))
-    (when (yes-or-no-p "Perform pending operations ? ")
-      (when upgrade-list
-        (pippel-upgrade-package (mapconcat 'identity upgrade-list " ")))
-      (when delete-list
-        (pippel-remove-package (mapconcat 'identity delete-list " "))))))
+    (let* ((del (when delete-list
+                  (concat (format "Delete %d package%s "
+                                  (length delete-list)
+                                  (if (> (length delete-list) 1)
+                                      "s" ""))
+                          (replace-regexp-in-string " " ", "
+                                                    (format "%s" delete-list)))))
+           (up (when upgrade-list
+                 (concat (format "Update %d package%s "
+                                 (length upgrade-list)
+                                 (if (> (length delete-list) 1)
+                                     "s" ""))
+                         (replace-regexp-in-string " " ","
+                                                   (format "%s" upgrade-list)))))
+           (msg (if (and del up)
+                    (concat del " and " up)
+                  (or del up))))
+      (when (yes-or-no-p (format "%s" msg))
+        (when upgrade-list
+          (pippel-upgrade-package (mapconcat 'identity upgrade-list " ")))
+        (when delete-list
+          (pippel-remove-package (mapconcat 'identity delete-list " ")))))))
 
 ;;;###autoload
 (defun pippel-install-package ()
