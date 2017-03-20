@@ -131,14 +131,26 @@ If this is nil, it's assumed pippel can be found in the standard path."
 ;;;;;;;;;;;;;
 ;;; Server
 
+(defvar pippel-process-name "pip-process"
+  "Process name for pippel processes.")
+
+(defvar pippel-process-buffer "*pip-process-buffer*"
+  "Buffer name for pippel processes.")
+
+(defun pippel-running-p ()
+  "Is pippel process running."
+  (interactive)
+  (or (get-buffer pippel-process-buffer)
+      (process-live-p pippel-process-name)))
+
 (defun pippel-open-process ()
   "Start and return pip process."
-  (let ((buf "*pip-process-buffer*")
+  (let ((buf pippel-process-buffer)
         (file (expand-file-name "pippel.py"
                                 pippel-package-path)))
     (unless (file-exists-p file)
       (user-error "Can't find pippel in pippel-package-path"))
-    (start-process "pip-process"
+    (start-process pippel-process-name
                    buf
                    pippel-python-command
                    file)
