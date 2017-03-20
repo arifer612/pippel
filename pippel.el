@@ -258,7 +258,7 @@ If this is nil, it's assumed pippel can be found in the standard path."
            (up (when upgrade-list
                  (concat (format "Update %d package%s "
                                  (length upgrade-list)
-                                 (if (> (length delete-list) 1)
+                                 (if (> (length upgrade-list) 1)
                                      "s" ""))
                          (replace-regexp-in-string " " ","
                                                    (format "%s" upgrade-list)))))
