@@ -268,7 +268,7 @@ If this is nil, it's assumed pippel can be found in the standard path."
                           (replace-regexp-in-string " " ", "
                                                     (format "%s" delete-list)))))
            (up (when upgrade-list
-                 (concat (format "Update %d package%s "
+                 (concat (format "Upgrade %d package%s "
                                  (length upgrade-list)
                                  (if (> (length upgrade-list) 1)
                                      "s" ""))
@@ -280,8 +280,13 @@ If this is nil, it's assumed pippel can be found in the standard path."
       (when (yes-or-no-p (format "%s" msg))
         (when upgrade-list
           (pippel-upgrade-package (mapconcat 'identity upgrade-list " ")))
+        (while (pippel-running-p)
+          (sleep-for 0.01))
         (when delete-list
-          (pippel-remove-package (mapconcat 'identity delete-list " ")))))))
+          (pippel-remove-package (mapconcat 'identity delete-list " ")))
+        (while (pippel-running-p)
+          (sleep-for 0.01))
+        (pippel-list-packages)))))
 
 ;;;###autoload
 (defun pippel-install-package ()
