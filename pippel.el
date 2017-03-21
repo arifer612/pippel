@@ -115,7 +115,7 @@ If this is nil, it's assumed pippel can be found in the standard path."
   "Re-populate the `tabulated-list-entries' with PACKAGES."
   (let ((buf (get-buffer-create
               (concat (when python-shell-virtualenv-root
-                        (car (reverse (split-string python-shell-virtualenv-root "\\/"))))
+                        (nth 1 (reverse (split-string python-shell-virtualenv-root "\\/"))))
                       "*Pip-Packages*"))))
     (with-current-buffer buf
       (pippel-package-menu-mode)
