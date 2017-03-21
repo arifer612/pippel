@@ -294,7 +294,11 @@ If this is nil, it's assumed pippel can be found in the standard path."
   (interactive)
   (let ((pkg (read-from-minibuffer "Enter package name: "))
         (proc (pippel-open-process)))
-    (pippel-call-pip-process proc "install_package" (s-trim pkg))))
+    (pippel-call-pip-process proc "install_package" (s-trim pkg))
+    (when (string= major-mode "pippel-package-menu-mode")
+      (while (pippel-running-p)
+        (sleep-for 0.01))
+      (pippel-list-packages))))
 
 ;;;###autoload
 (defun pippel-list-packages ()
