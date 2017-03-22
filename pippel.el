@@ -1,4 +1,4 @@
-;;; pippel.el --- Emacs frontend to python package manager pip -*- lexical-binding: t -*-
+;;; pippel.el --- Frontend to python package manager pip -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2017  Fritz Stelzer <brotzeitmacher@gmail.com>
 
@@ -135,7 +135,7 @@ If this is nil, it's assumed pippel can be found in the standard path."
   "Process name for pippel processes.")
 
 (defvar pippel-process-buffer "*pip-process-buffer*"
-  "Buffer name for pippel processes.")
+  "Buffer name for pippel process buffers.")
 
 (defun pippel-running-p ()
   "Is pippel process running."
@@ -175,7 +175,7 @@ If this is nil, it's assumed pippel can be found in the standard path."
     (while (process-live-p proc)
       (sleep-for 0.01))
     (kill-buffer (process-buffer proc)))
-  (remove-hook 'post-command-hook 'pippel-progress-reporter))
+  (remove-hook 'post-command-hook 'pippel-status-reporter))
 
 (defun pippel-process-filter (proc output)
   "Filter for pip-process."
@@ -196,11 +196,10 @@ If this is nil, it's assumed pippel can be found in the standard path."
   (process-send-string proc (concat (json-encode `((method . ,command)
                                                    (params . ,params)))
                                     "\n"))
-  (add-hook 'post-command-hook 'pippel-progress-reporter))
+  (add-hook 'post-command-hook 'pippel-status-reporter))
 
-(defun pippel-progress-reporter ()
+(defun pippel-status-reporter ()
   "Status indicator is shown in the echo area while pip process alive."
-  (interactive)
   (let ((progress-reporter (make-progress-reporter "Pip processing...")))
     (dotimes (i 1000)
       (when (pippel-running-p)
