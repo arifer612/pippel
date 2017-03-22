@@ -204,8 +204,8 @@ If this is nil, it's assumed pippel can be found in the standard path."
   (let ((progress-reporter (make-progress-reporter "Pip processing...")))
     (dotimes (i 1000)
       (when (pippel-running-p)
-        (sit-for 0.1)
-        (progress-reporter-update progress-reporter i)))))
+        (progress-reporter-update progress-reporter i)
+        (sit-for 0.1)))))
 
 ;;;;;;;;;;;;;;;;;;
 ;;; Interaction
