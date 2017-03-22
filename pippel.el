@@ -174,7 +174,8 @@ If this is nil, it's assumed pippel can be found in the standard path."
         (pippel-menu-generate objects)))
     (while (process-live-p proc)
       (sleep-for 0.01))
-    (kill-buffer (process-buffer proc))))
+    (kill-buffer (process-buffer proc)))
+  (remove-hook 'post-command-hook 'pippel-progress-reporter))
 
 (defun pippel-process-filter (proc output)
   "Filter for pip-process."
@@ -194,7 +195,17 @@ If this is nil, it's assumed pippel can be found in the standard path."
   "Send request to pip process."
   (process-send-string proc (concat (json-encode `((method . ,command)
                                                    (params . ,params)))
-                                    "\n")))
+                                    "\n"))
+  (add-hook 'post-command-hook 'pippel-progress-reporter))
+
+(defun pippel-progress-reporter ()
+  "Status indicator is shown in the echo area while pip process alive."
+  (interactive)
+  (let ((progress-reporter (make-progress-reporter "Pip processing...")))
+    (dotimes (i 1000)
+      (when (pippel-running-p)
+        (sit-for 0.1)
+        (progress-reporter-update progress-reporter i)))))
 
 ;;;;;;;;;;;;;;;;;;
 ;;; Interaction
