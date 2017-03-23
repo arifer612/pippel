@@ -4,7 +4,7 @@
 
 ;; Author: Fritz Stelzer <brotzeitmacher@gmail.com>
 ;; URL: https://github.com/brotzeitmacher/pippel
-;; Version: 1.0
+;; Version: 1.1
 ;; Package-Requires: ((emacs "25.1") (s "1.11.0"))
 
 ;;; License:
@@ -282,7 +282,7 @@ If this is nil, it's assumed pippel can be found in the standard path."
                                  (length upgrade-list)
                                  (if (> (length upgrade-list) 1)
                                      "s" ""))
-                         (replace-regexp-in-string " " ","
+                         (replace-regexp-in-string " " ", "
                                                    (format "%s" upgrade-list)))))
            (msg (if (and del up)
                     (concat del " and " up)
