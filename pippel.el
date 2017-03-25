@@ -70,6 +70,13 @@ If this is nil, it's assumed pippel can be found in the standard path."
   :type 'boolean
   :group 'pippel)
 
+(defcustom pippel-buffer-display-method 'display-buffer
+  "Default action when `pippel-list-packages' finished."
+  :type '(choice (const :tag "Pop to buffer." 'display-buffer)
+                 (const :tag "Pop to buffer." 'pop-to-buffer)
+                 (const :tag "Don't display menu mode buffer." nil))
+  :group 'pippel)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Package menu mode
 
@@ -131,7 +138,8 @@ If this is nil, it's assumed pippel can be found in the standard path."
       (tabulated-list-print t)
       (let ((sort-fold-case t))
         (sort-lines nil (point-min) (point-max))))
-    (pop-to-buffer buf)))
+    (when pippel-buffer-display-method
+      (funcall pippel-buffer-display-method buf))))
 
 ;;;;;;;;;;;;;
 ;;; Server
