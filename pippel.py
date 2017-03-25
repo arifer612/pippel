@@ -33,13 +33,16 @@ class Server(object):
         request = self.read_json()
         method = request['method']
         params = request['params']
+        packages = request['packages']
         try:
             method = getattr(self, method, None)
-            if not params:
+            if not packages:
                 result = method()
                 self.write_json(result)
+            elif not params:
+                method(packages)
             else:
-                method(params)
+                method(packages, params)
             self.stdout.write("Pip finished\n")
         except:
             self.stdout.write("Pip error\n")
@@ -51,7 +54,7 @@ class Server(object):
             except (KeyboardInterrupt, EOFError, SystemExit):
                 break
 
-            
+
 class PipBackend(Server):
     def get_installed_packages(self):
         final = []
@@ -71,17 +74,19 @@ class PipBackend(Server):
             final.append(result)
         return final
 
-    def install_package(self, packages):
+    def install_package(self, packages, params=None):
         install = InstallCommand()
         pkg_list = packages.split(" ")
         for pkg in pkg_list:
             # virtualenv active ?
             if hasattr(sys, 'real_prefix'):
                 options, args = install.parse_args([pkg, '--upgrade'])
+            elif params:
+                options, args = install.parse_args([pkg, '--upgrade', '--target', params])
             else:
                 options, args = install.parse_args([pkg, '--upgrade', '--user'])
             install.run(options, args)
-    
+
     def remove_package(self, packages):
         uninstall = UninstallCommand()
         pkg_list = packages.split(" ")

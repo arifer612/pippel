@@ -191,9 +191,10 @@ If this is nil, it's assumed pippel can be found in the standard path."
         (message "Pip error")
         (kill-process proc))))))
 
-(defun pippel-call-pip-process (proc command params)
+(defun pippel-call-pip-process (proc command &optional packages params)
   "Send request to pip process."
   (process-send-string proc (concat (json-encode `((method . ,command)
+                                                   (packages . ,packages)
                                                    (params . ,params)))
                                     "\n"))
   (add-hook 'post-command-hook 'pippel-status-reporter))
@@ -299,12 +300,14 @@ If this is nil, it's assumed pippel can be found in the standard path."
         (pippel-list-packages)))))
 
 ;;;###autoload
-(defun pippel-install-package ()
+(defun pippel-install-package (arg)
   "Prompt user for a string containing packages to be installed."
-  (interactive)
+  (interactive "P")
   (let ((pkg (read-from-minibuffer "Enter package name: "))
-        (proc (pippel-open-process)))
-    (pippel-call-pip-process proc "install_package" (s-trim pkg))
+        (proc (pippel-open-process))
+        (dir (--if-let arg
+                 (read-file-name "Directory: "))))
+    (pippel-call-pip-process proc "install_package" (s-trim pkg) dir)
     (when (string= major-mode "pippel-package-menu-mode")
       (while (pippel-running-p)
         (sleep-for 0.01))
@@ -314,7 +317,7 @@ If this is nil, it's assumed pippel can be found in the standard path."
 (defun pippel-list-packages ()
   "Display a list of installed packages."
   (interactive)
-  (pippel-call-pip-process (pippel-open-process) "get_installed_packages" nil))
+  (pippel-call-pip-process (pippel-open-process) "get_installed_packages"))
   
 (provide 'pippel)
 ;;; pippel.el ends here
