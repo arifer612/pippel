@@ -65,6 +65,11 @@ If this is nil, it's assumed pippel can be found in the standard path."
   :type 'directory
   :group 'pippel)
 
+(defcustom pippel-display-status-reporter t
+  "Display progress-reporter."
+  :type 'boolean
+  :group 'pippel)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Package menu mode
 
@@ -175,7 +180,8 @@ If this is nil, it's assumed pippel can be found in the standard path."
     (while (process-live-p proc)
       (sleep-for 0.01))
     (kill-buffer (process-buffer proc)))
-  (remove-hook 'post-command-hook 'pippel-status-reporter))
+  (when pippel-display-status-reporter
+    (remove-hook 'post-command-hook 'pippel-status-reporter)))
 
 (defun pippel-process-filter (proc output)
   "Filter for pip-process."
@@ -197,7 +203,8 @@ If this is nil, it's assumed pippel can be found in the standard path."
                                                    (packages . ,packages)
                                                    (params . ,params)))
                                     "\n"))
-  (add-hook 'post-command-hook 'pippel-status-reporter))
+  (when pippel-display-status-reporter
+   (add-hook 'post-command-hook 'pippel-status-reporter)))
 
 (defun pippel-status-reporter ()
   "Status indicator is shown in the echo area while pip process alive."
