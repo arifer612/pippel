@@ -118,9 +118,14 @@ If this is nil, it's assumed pippel can be found in the standard path."
                     (put-text-property 0 (length name) 'link home-page name)
                     name)
                  ,version
-                 ,(if (version< version latest)
-                      (propertize latest 'font-lock-face `(:foreground ,pippel-menu-latest-face))
-                    latest)
+                 ,(if (or (string-match "[A-Za-z]+" version)
+                          (string-match "[A-Za-z]+" latest))
+                      (if (string= version latest)
+                          latest
+                        (propertize latest 'font-lock-face `(:foreground ,pippel-menu-latest-face)))
+                    (if (version< version latest)
+                        (propertize latest 'font-lock-face `(:foreground ,pippel-menu-latest-face))
+                      latest))
                  ,description])))
 
 (defun pippel-menu-generate (packages)
