@@ -208,11 +208,12 @@ If this is nil, it's assumed pippel can be found in the standard path."
 
 (defun pippel-status-reporter ()
   "Status indicator is shown in the echo area while pip process alive."
-  (let ((progress-reporter (make-progress-reporter "Pip processing...")))
-    (dotimes (i 1000)
-      (when (pippel-running-p)
-        (progress-reporter-update progress-reporter i)
-        (sit-for 0.1)))))
+  (unless (active-minibuffer-window)
+    (let ((progress-reporter (make-progress-reporter "Pip processing...")))
+      (dotimes (i 1000)
+        (when (pippel-running-p)
+          (progress-reporter-update progress-reporter i)
+          (sit-for 0.1))))))
 
 ;;;;;;;;;;;;;;;;;;
 ;;; Interaction
