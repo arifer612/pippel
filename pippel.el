@@ -26,6 +26,7 @@
 (require 'json)
 (require 's)
 (require 'sort)
+(require 'dash)
 
 (defgroup pippel nil
   "Manager for pip packages."
