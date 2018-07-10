@@ -1,11 +1,22 @@
 import sys
 import os
 import json
-from pip.commands.list import ListCommand
-from pip.commands.install import InstallCommand
-from pip.commands.uninstall import UninstallCommand
-from pip.utils import get_installed_distributions
-from pip.commands.show import search_packages_info 
+
+# For older versions of pip
+try:
+    from pip.commands.list import ListCommand
+    from pip.commands.install import InstallCommand
+    from pip.commands.uninstall import UninstallCommand
+    from pip.utils import get_installed_distributions
+    from pip.commands.show import search_packages_info
+
+# For newer versions of pip
+except ImportError:
+    from pip._internal.commands.list import ListCommand
+    from pip._internal.commands.install import InstallCommand
+    from pip._internal.commands.uninstall import UninstallCommand
+    from pip._internal.utils.misc import get_installed_distributions
+    from pip._internal.commands.show import search_packages_info
 
 
 class Server(object):
