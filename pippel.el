@@ -4,7 +4,7 @@
 
 ;; Author: Fritz Stelzer <brotzeitmacher@gmail.com>
 ;; URL: https://github.com/brotzeitmacher/pippel
-;; Version: 1.1
+;; Version: 1.2
 ;; Package-Requires: ((emacs "25.1") (s "1.11.0") (dash "2.12.0"))
 
 ;;; License:
