@@ -20,9 +20,10 @@
 ;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;; GNU General Public License for more details.
 
-;; CHANGELOG
+;;; CHANGELOG
 ;; v1.4 - 2021-12-05
 ;;   + Fix for pip >21.1.3 (#c3f10e6)
+;;   + Formmating using black and add docstrings (#0e62405)
 ;; v1.3 - 2021-06-15
 ;;   + Fix for pip >19.1.1 (#2480fd3)
 ;;   + Maintainer changed to arifer612
