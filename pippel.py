@@ -1,3 +1,9 @@
+"""
+Script for Pippel to probe Pip for installed packages and modify them.
+Instructions and functions are to be executed through pippel.el, a detailed
+documentation is provided in it.
+"""
+
 import json
 import os
 import sys
@@ -5,7 +11,8 @@ from typing import Dict, List, Optional
 
 # Parse current Pip version
 from pip import __version__ as __pipver
-pipver = tuple(map(int, __pipver.split('.')))
+
+pipver = tuple(map(int, __pipver.split(".")))
 if len(pipver) == 2:
     pipver = (*pipver, 0)
 
@@ -18,11 +25,12 @@ def compare_version(version_a, version_b):
     """
     for rank_a, rank_b in zip(version_a, version_b):
         if rank_a != rank_b:
-            return True if rank_a > rank_b else False
+            return rank_a > rank_b
     return True
 
 
 # Module imports depend on Pip version.
+# pylint: disable=import-error, no-name-in-module
 if compare_version((19, 1, 1), pipver):
     from pip.commands.install import InstallCommand
     from pip.commands.list import ListCommand
@@ -30,32 +38,45 @@ if compare_version((19, 1, 1), pipver):
     from pip.commands.uninstall import UninstallCommand
     from pip.utils import get_installed_distributions
 else:
-    if compare_version((21, 2, 3), pipver):
-        # get_installed_distributions is removed from 21.3
-        from pip._internal.utils.misc import get_installed_distributions
     from pip._internal.commands.install import InstallCommand
     from pip._internal.commands.list import ListCommand
     from pip._internal.commands.show import search_packages_info
     from pip._internal.commands.uninstall import UninstallCommand
 
+    if compare_version(pipver, (21, 2, 0)):
+        # These are required to get the packages from 21.2
+        from pip._internal.utils.compat import stdlib_pkgs
+        from pip._internal.metadata import get_environment
+        from typing import cast
+    if not compare_version(pipver, (21, 2, 3)):
+        # get_installed_distributions is removed from 21.3
+        from pip._internal.utils.misc import get_installed_distributions
+
+# pylint: enable=import-error, no-name-in-module
+
 
 class Server(object):
-    def __init__(self, stdin=None, stdout=None):
-        if stdin is None:
-            self.stdin = sys.stdin
-        else:
-            self.stdin = stdin
-        if stdout is None:
-            self.stdout = sys.stdout
-        else:
-            self.stdout = stdout
+    """
+    Server to communicate between Emacs and Pip.
+    """
+
+    def __init__(self, _stdin=None, _stdout=None):
+        self.stdin = _stdin if _stdin else sys.stdin
+        self.stdout = _stdout if _stdout else sys.stdout
 
     def write_json(self, result):
+        # type: () -> None
+        """
+        Dumps result into STDOUT.
+        """
         self.stdout.write(json.dumps(result) + "\n")
         self.stdout.flush()
 
     def read_json(self):
-        # type: () -> dict
+        # type: () -> Dict[str, str]
+        """
+        Parses STDIN as a dictionary.
+        """
         line = self.stdin.readline()
         if not line:
             raise EOFError()
@@ -63,6 +84,9 @@ class Server(object):
 
     def handle_request(self):
         # type: () -> None
+        """
+        Sends requests to server.
+        """
         request = self.read_json()
         method = request["method"]
         params = request["params"]
@@ -77,11 +101,14 @@ class Server(object):
             else:
                 method(packages, params)
             self.stdout.write("Pip finished\n")
-        except Exception as e:
-            self.stdout.write("%s\n" % e)
-            self.stdout.write("Pip error\n")
+        except Exception as exception:
+            self.stdout.write("%s\n" % exception)
+            self.stdout.write("Pip error. Check the messages for error messages.\n")
 
     def serve_forever(self):
+        """
+        Keeps server alive until it breaks.
+        """
         while True:
             try:
                 self.handle_request()
@@ -90,6 +117,10 @@ class Server(object):
 
 
 class PipBackend(Server):
+    """
+    Backend server for Pippel with methods.
+    """
+
     @staticmethod
     def in_virtual_env():
         # type: () -> bool
@@ -98,12 +129,12 @@ class PipBackend(Server):
         """
         if hasattr(sys, "base_prefix"):
             return sys.base_prefix != sys.prefix
-        elif hasattr(sys, "real_prefix"):
+        if hasattr(sys, "real_prefix"):  # pylint: disable=no-else-return
             return sys.real_prefix != sys.prefix
-        else:
-            return False
+        return False
 
-    def get_installed_packages(self):
+    @staticmethod
+    def get_installed_packages():
         # type: () -> List[Dict[str, str]]
         """
         Retrieves all the installed packages in current environment as a dictionary.
@@ -111,19 +142,22 @@ class PipBackend(Server):
         if compare_version((19, 1, 0), pipver):
             get_list = ListCommand()
         else:
-            get_list = ListCommand("Pippel",
-                                   "Backend server for the Pippel service.")
-        options, args = get_list.parse_args(["--outdated"])
+            get_list = ListCommand("Pippel", "Backend server for the Pippel service.")
+        options, _ = get_list.parse_args(["--outdated"])
 
         if compare_version((21, 2, 0), pipver):
-            packages = [package for package in get_installed_distributions()
-                        if package.key != "team"]
+            packages = [
+                package
+                for package in get_installed_distributions()
+                if package.key != "team"
+            ]
             final = [
-                {"name": attributes.get("name"),
-                "version": attributes.get("version"),
-                "latest": str(getattr(package, "latest_version")),
-                "summary": attributes.get("summary"),
-                "home-page": attributes.get("home-page")
+                {
+                    "name": attributes.get("name"),
+                    "version": attributes.get("version"),
+                    "latest": str(getattr(package, "latest_version")),
+                    "summary": attributes.get("summary"),
+                    "home-page": attributes.get("home-page"),
                 }
                 for package in get_list.iter_packages_latest_infos(packages, options)
                 for attributes in search_packages_info([package.key])
@@ -131,9 +165,6 @@ class PipBackend(Server):
         else:
             # Pip 21.2 onwards use _ProcessedDists class to contain all the metadata of
             # a package instead of a dictionary.
-            from pip._internal.utils.compat import stdlib_pkgs
-            from pip._internal.metadata import get_environment
-            from typing import cast
 
             skip = set(stdlib_pkgs)
             packages = [
@@ -147,11 +178,12 @@ class PipBackend(Server):
                 )
             ]
             final = [
-                {"name": str(getattr(attributes, "name")),
-                "version": str(getattr(attributes, "version")),
-                "latest": str(getattr(package, "latest_version")),
-                "summary": str(getattr(attributes, "summary")),
-                "home-page": str(getattr(attributes, "homepage"))
+                {
+                    "name": str(getattr(attributes, "name")),
+                    "version": str(getattr(attributes, "version")),
+                    "latest": str(getattr(package, "latest_version")),
+                    "summary": str(getattr(attributes, "summary")),
+                    "home-page": str(getattr(attributes, "homepage")),
                 }
                 for package in get_list.iter_packages_latest_infos(packages, options)
                 for attributes in search_packages_info([package.canonical_name])
@@ -166,10 +198,9 @@ class PipBackend(Server):
         if compare_version((19, 1, 0), pipver):
             install = InstallCommand()
         else:
-            install = InstallCommand("Pippel",
-                                     "Backend server for the Pippel service.")
+            install = InstallCommand("Pippel", "Backend server for the Pippel service.")
 
-        assert packages , "`packages` should not be an empty string."
+        assert packages, "`packages` should not be an empty string."
         success = 1
         for package in packages.split():
             if self.in_virtual_env():
@@ -181,23 +212,27 @@ class PipBackend(Server):
             success = install.main(args)
         return success
 
-    def remove_package(self, packages):
+    @staticmethod
+    def remove_package(packages):
         # type: (str) -> int
         """
         Removes the string of packages and returns the success code.
         """
-        assert packages , "`packages` should not be an empty string."
+        assert packages, "`packages` should not be an empty string."
         if compare_version((19, 1, 0), pipver):
             uninstall = UninstallCommand()
         else:
-            uninstall = UninstallCommand("Pippel",
-                                         "Backend server for the Pippel service.")
+            uninstall = UninstallCommand(
+                "Pippel", "Backend server for the Pippel service."
+            )
         success = uninstall.main(packages.split() + ["--yes"])
         return success
+
 
 if __name__ == "__main__":
     stdin = sys.stdin
     stdout = sys.stdout
-    sys.stdout = sys.stderr = open(os.devnull, "w")
+    with open(os.devnull, "w") as null:
+        sys.stdout = sys.stderr = null
     stdout.flush()
     PipBackend(stdin, stdout).serve_forever()
