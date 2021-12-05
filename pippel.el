@@ -5,7 +5,7 @@
 ;; Author: Fritz Stelzer <brotzeitmacher@gmail.com>
 ;; Maintainer: Arif Er <arifer612@protonmail.me>
 ;; URL: https://github.com/arifer612/pippel
-;; Version: 1.3
+;; Version: 1.4
 ;; Package-Requires: ((emacs "25.1") (s "1.11.0") (dash "2.12.0"))
 
 ;;; License:
@@ -19,6 +19,13 @@
 ;; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;; GNU General Public License for more details.
+
+;; CHANGELOG
+;; v1.4 - 2021-12-05
+;;   + Fix for pip >21.1.3 (#c3f10e6)
+;; v1.3 - 2021-06-15
+;;   + Fix for pip >19.1.1 (#2480fd3)
+;;   + Maintainer changed to arifer612
 
 ;;; Code:
 
