@@ -1,11 +1,11 @@
 Pippel
 ============
 
-[![Melpa](https://melpa.org/packages/pippel-badge.svg)](http://melpa.milkbox.net/#/pippel)
+[![Melpa](https://melpa.org/packages/pippel-badge.svg)](http://melpa.org/#/pippel)
 
 This package is an Emacs frontend for the Python package manager pip. As pippel also uses `tabulated-list-mode`, it provides a similiar package menu like `package-list-packages`.
 
-![](https://raw.githubusercontent.com/brotzeitmacher/pippel/master/pippel-menu.png)
+![](https://raw.githubusercontent.com/arifer612/pippel/master/pippel-menu.png)
 
 ## Usage
 
