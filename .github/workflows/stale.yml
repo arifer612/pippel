@@ -2,7 +2,7 @@ name: Mark stale issues and pull requests
 
 on:
   schedule:
-  - cron: '*/30 * * * *'
+  - cron: '0 0 * * *'
 
 jobs:
   stale:
@@ -20,9 +20,9 @@ jobs:
           recent activity. It will be closed if no further activity occurs.
           Please let us know if this PR is still need merging!
         stale-issue-label: 'stale'
-        exempt-issue-label: 'High Priority'
+        exempt-issue-labels: 'High Priority'
         stale-pr-label: 'stale'
-        exempt-pr-label: 'High Priority'
+        exempt-pr-labels: 'High Priority'
         exempt-all-pr-assignees: true
         remove-stale-when-updated: true
         days-before-stale: 60
