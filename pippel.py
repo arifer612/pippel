@@ -7,7 +7,7 @@ documentation is provided in it.
 import json
 import os
 import sys
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 # Parse current Pip version
 from pip import __version__ as __pipver
@@ -28,9 +28,9 @@ def compare_version(version_a, version_b):
             return rank_a > rank_b
     return True
 
-
 # Module imports depend on Pip version.
 # pylint: disable=import-error, no-name-in-module
+from pip._internal.utils.compat import stdlib_pkgs
 if compare_version((19, 1, 1), pipver):
     from pip.commands.install import InstallCommand
     from pip.commands.list import ListCommand
@@ -45,7 +45,6 @@ else:
 
     if compare_version(pipver, (21, 2, 0)):
         # These are required to get the packages from 21.2
-        from pip._internal.utils.compat import stdlib_pkgs
         from pip._internal.metadata import get_environment
         from typing import cast
     if not compare_version(pipver, (21, 2, 3)):
@@ -65,7 +64,7 @@ class Server(object):
         self.stdout = _stdout if _stdout else sys.stdout
 
     def write_json(self, result):
-        # type: () -> None
+        # type: (list) -> None
         """
         Dumps result into STDOUT.
         """
@@ -88,22 +87,18 @@ class Server(object):
         Sends requests to server.
         """
         request = self.read_json()
-        method = request["method"]
-        params = request["params"]
-        packages = request["packages"]
+        arg1 = request.get("arg1")
+        arg2 = request.get("arg2")
         try:
-            method = getattr(self, method, None)
-            if not packages:
-                result = method()
-                self.write_json(result)
-            elif not params:
-                method(packages)
-            else:
-                method(packages, params)
+            method = getattr(self, request["method"])
+            method(arg1, arg2)
             self.stdout.write("Pip finished\n")
         except Exception as exception:
+            self.stdout.write("PIPPEL_ERROR <<<\n")
+            self.stdout.write("method: %s; arg1: %s; arg2: %s\n" %
+                              (request.get("method"), arg1, arg2))
             self.stdout.write("%s\n" % exception)
-            self.stdout.write("Pip error. Check the messages for error messages.\n")
+            self.stdout.write("PIPPEL_ERROR >>>\n")
 
     def serve_forever(self):
         """
@@ -129,27 +124,39 @@ class PipBackend(Server):
         """
         if hasattr(sys, "base_prefix"):
             return sys.base_prefix != sys.prefix
-        if hasattr(sys, "real_prefix"):  # pylint: disable=no-else-return
+        if hasattr(sys, "real_prefix"):
             return sys.real_prefix != sys.prefix
         return False
 
-    @staticmethod
-    def get_installed_packages():
-        # type: () -> List[Dict[str, str]]
+    def get_installed_packages(self, params="", *args, **kwargs):
+        # type: (str, tuple, dict) -> None
         """
         Retrieves all the installed packages in current environment as a dictionary.
+        If USER is TRUE and the current python environment is not a virtual environment,
+        only the user installed packages are retrieved.
         """
         if compare_version((19, 1, 0), pipver):
             get_list = ListCommand()
         else:
             get_list = ListCommand("Pippel", "Backend server for the Pippel service.")
-        options, _ = get_list.parse_args(["--outdated"])
+
+        if self.in_virtual_env() or not params:
+            params = ""
+
+        options, _ = get_list.parse_args(["--outdated", params])
+        skip = set(stdlib_pkgs)
 
         if compare_version((21, 2, 0), pipver):
             packages = [
                 package
-                for package in get_installed_distributions()
-                if package.key != "team"
+                for package in get_installed_distributions(
+                        local_only=options.local,
+                        user_only=options.user,
+                        editables_only=options.editable,
+                        include_editables=options.include_editable,
+                        paths=options.path,
+                        skip=skip,
+                        )
             ]
             final = [
                 {
@@ -165,8 +172,6 @@ class PipBackend(Server):
         else:
             # Pip 21.2 onwards use _ProcessedDists class to contain all the metadata of
             # a package instead of a dictionary.
-
-            skip = set(stdlib_pkgs)
             packages = [
                 cast("_DistWithLatestInfo", d)
                 for d in get_environment(options.path).iter_installed_distributions(
@@ -188,7 +193,7 @@ class PipBackend(Server):
                 for package in get_list.iter_packages_latest_infos(packages, options)
                 for attributes in search_packages_info([package.canonical_name])
             ]
-        return final
+        self.write_json(final)
 
     def install_package(self, packages, params=None):
         # type: (str, Optional[str]) -> int
