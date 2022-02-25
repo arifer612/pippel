@@ -6,15 +6,17 @@ documentation is provided in it.
 
 import json
 import os
+import traceback
 import sys
+import subprocess
 from typing import Dict, List, Optional, Tuple
 
 # Parse current Pip version
-from pip import __version__ as __pipver
+from pip import __version__ as pip_version
 
-pipver = tuple(map(int, __pipver.split(".")))
-if len(pipver) == 2:
-    pipver = (*pipver, 0)
+pip_version = tuple(map(int, pip_version.split(".")))
+if len(pip_version) == 2:
+    pip_version = (*pip_version, 0)
 
 
 def compare_version(version_a, version_b):
@@ -31,7 +33,7 @@ def compare_version(version_a, version_b):
 # Module imports depend on Pip version.
 # pylint: disable=import-error, no-name-in-module
 from pip._internal.utils.compat import stdlib_pkgs
-if compare_version((19, 1, 1), pipver):
+if compare_version((19, 1, 1), pip_version):
     from pip.commands.install import InstallCommand
     from pip.commands.list import ListCommand
     from pip.commands.show import search_packages_info
@@ -43,11 +45,11 @@ else:
     from pip._internal.commands.show import search_packages_info
     from pip._internal.commands.uninstall import UninstallCommand
 
-    if compare_version(pipver, (21, 2, 0)):
+    if compare_version(pip_version, (21, 2, 0)):
         # These are required to get the packages from 21.2
         from pip._internal.metadata import get_environment
         from typing import cast
-    if not compare_version(pipver, (21, 2, 3)):
+    if not compare_version(pip_version, (21, 2, 3)):
         # get_installed_distributions is removed from 21.3
         from pip._internal.utils.misc import get_installed_distributions
 
@@ -87,17 +89,20 @@ class Server(object):
         Sends requests to server.
         """
         request = self.read_json()
+        _method = request["method"]
         arg1 = request.get("arg1")
         arg2 = request.get("arg2")
         try:
-            method = getattr(self, request["method"])
+            self.stdout.write("pip version: %s\n" % str(pip_version))
+            self.stdout.write("Executing: %s(%s, %s)\n" %
+                              (_method, arg1, arg2))
+            method = getattr(self, _method)
             method(arg1, arg2)
             self.stdout.write("Pip finished\n")
         except Exception as exception:
             self.stdout.write("PIPPEL_ERROR <<<\n")
-            self.stdout.write("method: %s; arg1: %s; arg2: %s\n" %
-                              (request.get("method"), arg1, arg2))
-            self.stdout.write("%s\n" % exception)
+            self.stdout.write("%s\n\n" % exception)
+            self.stdout.write("%s\n" % traceback.format_exc())
             self.stdout.write("PIPPEL_ERROR >>>\n")
 
     def serve_forever(self):
@@ -135,7 +140,7 @@ class PipBackend(Server):
         If USER is TRUE and the current python environment is not a virtual environment,
         only the user installed packages are retrieved.
         """
-        if compare_version((19, 1, 0), pipver):
+        if compare_version((19, 1, 0), pip_version):
             get_list = ListCommand()
         else:
             get_list = ListCommand("Pippel", "Backend server for the Pippel service.")
@@ -146,7 +151,7 @@ class PipBackend(Server):
         options, _ = get_list.parse_args(["--outdated", params])
         skip = set(stdlib_pkgs)
 
-        if compare_version((21, 2, 0), pipver):
+        if compare_version((21, 2, 0), pip_version):
             packages = [
                 package
                 for package in get_installed_distributions(
@@ -195,43 +200,56 @@ class PipBackend(Server):
             ]
         self.write_json(final)
 
-    def install_package(self, packages, params=None):
+    def install_package(self, _packages, params=None, *args, **kwargs):
         # type: (str, Optional[str]) -> int
         """
         Installs the string of packages and returns the success code.
         """
-        if compare_version((19, 1, 0), pipver):
+        if compare_version((19, 1, 0), pip_version):
             install = InstallCommand()
         else:
             install = InstallCommand("Pippel", "Backend server for the Pippel service.")
 
-        assert packages, "`packages` should not be an empty string."
-        success = 1
-        for package in packages.split():
-            if self.in_virtual_env():
-                args = [package, "--upgrade"]
-            elif params:
-                args = [package, "--upgrade", "--target", params]
-            else:
-                args = [package, "--upgrade", "--user"]
-            success = install.main(args)
-        return success
+        assert _packages, "`_packages` should not be an empty string."
 
-    @staticmethod
-    def remove_package(packages):
-        # type: (str) -> int
+        packages = _packages.split()
+        if self.in_virtual_env():
+            package_args = [sys.executable, "-m", "pip", "install", *packages,
+                            "--upgrade"]
+            self.stdout.write("Installing %s in a virtual environment\n" %
+                              ", ".join(packages))
+        elif params:
+            package_args = [sys.executable, "-m", "pip", "install", *packages,
+                            "--upgrade", "--target", params]
+            self.stdout.write("Installing %s to %s\n" %
+                              (", ".join(packages), params))
+        else:
+            package_args = [sys.executable, "-m", "pip", "install", *packages,
+                            "--upgrade", "--user"]
+            self.stdout.write("Installting %s in the local user space\n" % packages)
+
+        return subprocess.check_call(package_args)
+
+    def remove_package(self, _packages, *args, **kwargs):
+        # type: (str, tuple, dict) -> int
         """
         Removes the string of packages and returns the success code.
         """
-        assert packages, "`packages` should not be an empty string."
-        if compare_version((19, 1, 0), pipver):
+        if compare_version((19, 1, 0), pip_version):
             uninstall = UninstallCommand()
         else:
             uninstall = UninstallCommand(
                 "Pippel", "Backend server for the Pippel service."
             )
-        success = uninstall.main(packages.split() + ["--yes"])
-        return success
+
+        assert _packages, "`packages` should not be an empty string."
+
+        packages = _packages.split()
+        package_args = [sys.executable, "-m", "pip", "uninstall", *packages,
+                        "--yes"]
+        self.stdout.write("Uninstalling %s\n" % ", ".join(packages))
+
+        return subprocess.check_call(package_args)
 
 
 if __name__ == "__main__":
