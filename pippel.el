@@ -87,6 +87,11 @@ If this is nil, it's assumed pippel can be found in the standard path."
                  (const :tag "Don't display menu mode buffer." nil))
   :group 'pippel)
 
+(defcustom pippel-debugging t
+  "Turn on debugging for Pippel."
+  :type 'boolean
+  :group 'pippel)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Package menu mode
 
@@ -165,6 +170,9 @@ If this is nil, it's assumed pippel can be found in the standard path."
 (defvar pippel-process-buffer "*pip-process-buffer*"
   "Buffer name for pippel process buffers.")
 
+(defvar pippel-debug-buffer "*pip-debug-buffer*"
+  "Buffer name for pippel debug buffers.")
+
 (defun pippel-running-p ()
   "Is pippel process running."
   (interactive)
@@ -216,15 +224,21 @@ If this is nil, it's assumed pippel can be found in the standard path."
        ((looking-back "Pip finished\n" nil)
         (message "Pip finished")
         (kill-process proc))
-       ((looking-back "Pip error\n" nil)
-        (message "Pip error")
+       ((looking-back "PIPPEL_ERROR >>>\n" nil)
+        (if pippel-debugging
+            (progn
+              (message "Pippel error. Check the debug buffer for the error
+message and please report it on GitHub.")
+              (copy-to-buffer pippel-debug-buffer (point-min) (point-max)))
+          (message "Pippel error. Set `pippel-debugging' to 't and please report
+it as an issue on GitHub."))
         (kill-process proc))))))
 
-(defun pippel-call-pip-process (proc command &optional packages params)
+(defun pippel-call-pip-process (proc command &optional arg1 arg2)
   "Send request to pip process."
   (process-send-string proc (concat (json-encode `((method . ,command)
-                                                   (packages . ,packages)
-                                                   (params . ,params)))
+                                                   (arg1 . ,arg1)
+                                                   (arg2 . ,arg2)))
                                     "\n"))
   (when pippel-display-status-reporter
    (add-hook 'post-command-hook 'pippel-status-reporter)))
@@ -349,6 +363,13 @@ If this is nil, it's assumed pippel can be found in the standard path."
   "Display a list of installed packages."
   (interactive)
   (pippel-call-pip-process (pippel-open-process) "get_installed_packages"))
-  
+
+;;;###autoload
+(defun pippel-list-user-packages ()
+  "Display a list of user-installed system packages."
+  (interactive)
+  (pippel-call-pip-process (pippel-open-process) "get_installed_packages"
+                           "--user"))
+
 (provide 'pippel)
 ;;; pippel.el ends here
