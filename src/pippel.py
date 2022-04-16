@@ -65,13 +65,22 @@ class Server(object):
         self.stdin = _stdin if _stdin else sys.stdin
         self.stdout = _stdout if _stdout else sys.stdout
 
-    def write_json(self, result):
-        # type: (list) -> None
+    def write_out(self, payload, test_call):
+        # type: (str, bool) -> None
+        """
+        Dumps PAYLOAD into STDOUT if TEST_CALL is False.
+        """
+        if not test_call:
+            self.stdout.write(payload + "\n")
+
+    def write_json(self, result, test_call):
+        # type: (list, bool) -> None
         """
         Dumps result into STDOUT.
         """
-        self.stdout.write(json.dumps(result) + "\n")
-        self.stdout.flush()
+        if not test_call:
+            self.stdout.write(json.dumps(result) + "\n")
+            self.stdout.flush()
 
     def read_json(self):
         # type: () -> Dict[str, str]
@@ -134,7 +143,7 @@ class PipBackend(Server):
         return False
 
     def get_installed_packages(self, params="", *args, **kwargs):
-        # type: (str, tuple, dict) -> None
+        # type: (str, tuple, dict) -> List[Dict[str, str]]
         """
         Retrieves all the installed packages in current environment as a dictionary.
         If USER is TRUE and the current python environment is not a virtual environment,
@@ -145,8 +154,15 @@ class PipBackend(Server):
         else:
             get_list = ListCommand("Pippel", "Backend server for the Pippel service.")
 
+        if "test" in params:
+            params = params.replace("test", "")
+            test_call = True
+        else:
+            test_call = False
+
         if self.in_virtual_env() or not params:
             params = ""
+
 
         options, _ = get_list.parse_args(["--outdated", params])
         skip = set(stdlib_pkgs)
@@ -198,10 +214,12 @@ class PipBackend(Server):
                 for package in get_list.iter_packages_latest_infos(packages, options)
                 for attributes in search_packages_info([package.canonical_name])
             ]
-        self.write_json(final)
 
-    def install_package(self, _packages, params=None, *args, **kwargs):
-        # type: (str, Optional[str]) -> int
+        self.write_json(final, test_call)
+        return final
+
+    def install_package(self, _packages, params="", *args, **kwargs):
+        # type: (str, str, tuple, dict) -> int
         """
         Installs the string of packages and returns the success code.
         """
@@ -212,26 +230,37 @@ class PipBackend(Server):
 
         assert _packages, "`_packages` should not be an empty string."
 
+        if "test" in params:
+            test_call = True
+            params = params.replace("test", "")
+        else:
+            test_call = False
+
         packages = _packages.split()
         if self.in_virtual_env():
             package_args = [sys.executable, "-m", "pip", "install", *packages,
                             "--upgrade"]
-            self.stdout.write("Installing %s in a virtual environment\n" %
-                              ", ".join(packages))
+            self.write_out("Installing %s in a virtual environment\n" %
+                           ", ".join(packages),
+                           test_call)
         elif params:
             package_args = [sys.executable, "-m", "pip", "install", *packages,
                             "--upgrade", "--target", params]
-            self.stdout.write("Installing %s to %s\n" %
-                              (", ".join(packages), params))
+            self.write_out("Installing %s to %s\n" %
+                           (", ".join(packages), params),
+                           test_call)
         else:
             package_args = [sys.executable, "-m", "pip", "install", *packages,
                             "--upgrade", "--user"]
-            self.stdout.write("Installting %s in the local user space\n" % packages)
+            self.write_out("Installting %s in the local user space\n" %
+                           packages,
+                           test_call)
 
-        return subprocess.check_call(package_args)
+        with open(os.devnull, "w") as devnull:
+            return subprocess.check_call(package_args, stdout=devnull)
 
-    def remove_package(self, _packages, *args, **kwargs):
-        # type: (str, tuple, dict) -> int
+    def remove_package(self, _packages, params="", *args, **kwargs):
+        # type: (str, str, tuple, dict) -> int
         """
         Removes the string of packages and returns the success code.
         """
@@ -244,12 +273,19 @@ class PipBackend(Server):
 
         assert _packages, "`packages` should not be an empty string."
 
+        if "test" in params:
+            test_call = True
+            params = params.replace("test", "")
+        else:
+            test_call = False
+
         packages = _packages.split()
         package_args = [sys.executable, "-m", "pip", "uninstall", *packages,
                         "--yes"]
-        self.stdout.write("Uninstalling %s\n" % ", ".join(packages))
+        self.write_out("Uninstalling %s\n" % ", ".join(packages), test_call)
 
-        return subprocess.check_call(package_args)
+        with open(os.devnull, "w") as devnull:
+            return subprocess.check_call(package_args, stdout=devnull)
 
 
 if __name__ == "__main__":
