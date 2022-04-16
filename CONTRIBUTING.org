@@ -1,0 +1,23 @@
+#+TITLE: Contributing to Pippel
+
+Thank you for wanting to help out in making Pippel a better open-source
+software. There are many ways you can contribute to this project, all of which
+will be greatly appreciated.
+
+The first and foremost way to contribute to this project is to report any issues
+or failures of Pippel in your systems. I only have access to so many different
+environments and cannot say with absolute certainty that Pippel is fault-proof.
+Report such issues as an [[https://github.com/arifer612/pippel/issues/new][issue]] and share as much information that can help in
+troubleshooting it.
+
+The second way to contribute to this project is to share ideas on what other
+features you would like to see Pippel implement. I am only a single maintainer,
+and only have so many ideas. Whether the feature is relevant to Pippel or not is
+a separate issue, just share it with us and maybe something may come out of it!
+
+Third, being the only maintainer of this (small) project, I am also the only one
+who will be attending to all issues and feature requests so any help is always
+welcome, especially when it comes to coding. If there are issues or feature
+requests that you feel you want to contribute to, please feel free to submit a
+pull request and see it shared with all the other Emacs users in the world
+through MELPA!
