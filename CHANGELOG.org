@@ -1,0 +1,33 @@
+#+TITLE: Changelog
+#+DESCRIPTION: Records of changes made to Pippel
+
+** v1.5 (alpha)
+*** Additions:
++ CHANGELOG file
++ Unit test scripts and README file build script
+
+*** Changes:
++ Access user library when not in virtualenv. Close #19 (#705715e)
++ Package organisation
+  
+** v1.4.1 [2022-04-17]
+
+*** Additions:
++ The use of the `traceback` library for more verbose error debugging.
+  
+*** Fixes:
++ I/O logging error because of direct use of `main()` for InstallCommand and
+  UninstallCommand.
+
+
+** v1.4 [2021-12-05]
+*** Changes:
++ Formatting using black and add docstrings. (#0e62405)
+*** Fixes:
++ Breaking changes for pip >21.1.3. (#c3f10e6)
+
+** v1.3 [2021-06-15]
+*** Changes:
++ Maintainer changed to [[https://github.com/arifer612][arifer612]]
+*** Fixes:
++ Breaking changes for pip >19.1.1. (#2480fd3)
