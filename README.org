@@ -1,0 +1,69 @@
+#+TITLE: Pippel
+#+AUTHOR: Fritz Stelzer <brotzeimacher@gmail.com>
+#+MAINTAINER: Arif Er <arifer612@protonmail.com>
+#+VERSION: 1.4
+
+[[http://melpa.org/#/pippel][https://melpa.org/packages/pippel-badge.svg]]
+
+This is the development branch of Pippel, where any future features or temporary
+fixes are hooked to. Melpa tracks the =master= branch so to use this branch,
+please refer to [[*Installation][Installation]] for more details.
+
+This package is an Emacs frontend for the Python package manager pip. As
+pippel also uses =tabulated-list-mode=, it provides a similiar package
+menu like =package-list-packages=. Unlike pip, however, you will have immediate
+knowledge of the latest available versions of your installed packages and the
+choice to pick to update.
+
+[[https://raw.githubusercontent.com/arifer612/pippel/master/pippel-menu.png]]
+
+** Installation
+The branch is not tracked by Melpa, but it can be installed using =quelpa=.
+
+#+BEGIN_EXAMPLE emacs-lisp
+  (quelpa '(pippel :fetcher github
+                   :repo "arifer612/pippel"
+                   :branch "dev"
+                   :files (:defaults
+                           "pippel.py")))
+  (require 'pippel)
+#+END_EXAMPLE
+
+** Usage
+To use it call =M-x pippel-list-packages=.
+
+Shortcuts for =pippel-package-menu-mode= buffers:
+
+- =m= =pippel-menu-mark-unmark= remove mark
+- =d= =pippel-menu-mark-delete= mark for deletion
+- =U= =pippel-menu-mark-all-upgrades= mark all upgradable
+- =u= =pippel-menu-mark-upgrade= mark for upgrade
+- =r= =pippel-list-packages= refresh package list
+- =i= =pippel-install-package= prompt user for packages
+- =x= =pippel-menu-execute= perform marked package menu actions
+- =RET= =pippel-menu-visit-homepage= follow link
+
+** Python/Pip compatibility
+Taking for granted that Pip and Emacs should be OS ignorant, Pippel is tested
+only on environments with different official major Python releases and all Pip
+releases. The results of the tests are:
+
+#+NAME: pytest-results
+#+BEGIN_SRC python :var tab=pytester :exports results
+  import collections
+
+  pip_results = collections.defaultdict(dict)
+  py_results = collections.defaultdict(dict)
+
+  for entry in [line.strip().split() for line in tab.splitlines() if line.strip()]:
+      py_ver, pip_ver, res = entry
+      pip_results[pip_ver][py_ver] = res
+      py_results[py_ver][pip_ver] = res
+
+  lines = [list(" ") + list(py_results)]
+  for pip_ver in pip_results:
+      lines += [[pip_ver] + [pip_results[pip_ver][ver] for ver in py_results]]
+
+  return lines
+#+END_SRC
+:END:

@@ -1,0 +1,11 @@
+#+TITLE: Library of Babel
+#+DESCRIPTION: Additional scripts to be executed as source blocks
+
+#+NAME: pytester
+#+BEGIN_SRC bash :results verbatim silent
+  while read PY_VER; do
+      while read PIP_VER; do
+        ./.github/scripts/pytester.sh ${PY_VER} ${PIP_VER}
+      done <<< $(cat ./.github/versions/PIP_VERSIONS)
+  done <<< $(cat ./.github/versions/PYTHON_VERSIONS)
+#+END_SRC
