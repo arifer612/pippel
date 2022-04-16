@@ -1,0 +1,62 @@
+name: PyTest and build the docs - dev
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+        # Import GPG key for signing of commits
+        # https://github.com/crazy-max/ghaction-import-gpg
+      - name: Import GPG key
+        id: import_gpg
+        uses: crazy-max/ghaction-import-gpg@v4
+        with:
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.GPG_PASSPHRASE }}
+          git_user_signingkey: true
+          git_commit_gpgsign: true
+
+        # Install Emacs onto system
+      - name: Install Emacs
+        run: sudo apt install emacs-nox --yes
+
+        # Install relevant latest Python versions
+      - name: Setup Python 3.10
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.10'
+      - name: Setup Python 3.9
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.9'
+      - name: Setup Python 3.8
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.8'
+
+        # Install Pipenv for test script to work
+      - name: Install dependencies
+        run: pip install pipenv
+
+        # Run shell script to populate the README file
+      - name: Test and build
+        run: .github/scripts/doc-builder.sh
+
+        # Publish changes to the current branch using my bot
+        # https://github.com/EndBug/add-and-commit
+      - name: Publish new docs
+        uses: EndBug/add-and-commit@v9
+        with:
+          add: 'README.org'
+          message: 'Update README with PyTest results'
+          author_name: arifer612-bot
+          author_email: 103842184+arifer612-bot@users.noreply.github.com
+          committer_name: arifer612-bot
+          committer_email: 103842184+arifer612-bot@users.noreply.github.com
+          push: true
